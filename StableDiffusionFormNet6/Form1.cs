@@ -34,9 +34,9 @@ namespace StableDiffusionFormNet6
             var config = new StableDiffusionConfig
             {
                 // Number of denoising steps
-                NumInferenceSteps = 5,
+                NumInferenceSteps = (int)numericUpDownSteps.Value,
                 // Scale for classifier-free guidance
-                GuidanceScale = 7.5,
+                GuidanceScale = (double)numericUpDown_Scale.Value,
                 // Set your preferred Execution Provider. Currently (GPU, DirectML, CPU) are supported in this project.
                 // ONNX Runtime supports many more than this. Learn more here: https://onnxruntime.ai/docs/execution-providers/
                 // The config is defaulted to CUDA. You can override it here if needed.
@@ -48,8 +48,13 @@ namespace StableDiffusionFormNet6
                 TextEncoderOnnxPath = @".\models\text_encoder\model.onnx",
                 UnetOnnxPath = @".\models\unet\model.onnx",
                 VaeDecoderOnnxPath = @".\models\vae_decoder\model.onnx",
-                SafetyModelPath = @".\models\safety_checker\model.onnx",
+                SafetyModelPath = @".\models\safety_checker\model.onnx",            
             };
+            trackBar_Width.Invoke(new Action(() =>
+            {
+                config.Width = trackBar_Width.Value;
+                config.Height = trackBar_Height.Value;
+            }));
             // Inference Stable Diff
             var image = UNet.Inference(prompt, config);
             // If image failed or was unsafe it will return null.
@@ -75,5 +80,24 @@ namespace StableDiffusionFormNet6
             }));
             System.GC.Collect();
         }
+
+        private void trackBar_Scroll(object sender, EventArgs e)
+        {
+            TrackBar trackBar = (TrackBar)sender;
+            Control[] nowtb = Controls.Find(trackBar.Name.Replace("trackBar", "numericUpDown"), true);
+            NumericUpDown numericUpDown = (NumericUpDown)nowtb[0];
+            numericUpDown.Value = trackBar.Value;
+        }
+
+        private void numericUpDown_ValueChanged(object sender, EventArgs e)
+        {
+            NumericUpDown numericUpDown = (NumericUpDown)sender;
+            if(numericUpDown.Value % 128 != 0)
+                numericUpDown.Value = ((int)(numericUpDown.Value / 128) + 1) * 128;
+            Control[] nowtb = Controls.Find(numericUpDown.Name.Replace("numericUpDown", "trackBar"), true);
+            TrackBar trackBar = (TrackBar)nowtb[0];
+            trackBar.Value = (int)numericUpDown.Value;
+        }
+
     }
 }
