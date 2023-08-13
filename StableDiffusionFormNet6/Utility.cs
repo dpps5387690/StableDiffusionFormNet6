@@ -16,6 +16,7 @@ namespace StableDiffusionFormNet6
             {
                 richTextBox.Text = richTextBox.Text + str + Environment.NewLine;
                 //if (GlobalVariable.IsEndLine)
+                richTextBox.SelectionStart = richTextBox.Text.Length;
                 richTextBox.ScrollToCaret();
             }));
         }

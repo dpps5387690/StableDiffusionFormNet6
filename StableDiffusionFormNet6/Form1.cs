@@ -20,6 +20,7 @@ namespace StableDiffusionFormNet6
         private void button_Generate_Click(object sender, EventArgs e)
         {
             button_Generate.Enabled = false;
+            richTextBox_Log.Clear();
             Thread m_generate = new Thread(() => generate_img());//µ¥«Ý@START_TEST 00 11111111+
             m_generate.IsBackground = true;
             m_generate.Start();
@@ -63,19 +64,25 @@ namespace StableDiffusionFormNet6
                 Utility.WriteStatus(GlobalVariable.RichText_log, "Unable to create image, please try again.");
             }
 
-            var imageName = $"sd_image_{DateTime.Now.ToString("yyyyMMddHHmm")}.png";
-            image.Save(imageName);
+
             // Stop the timer
             watch.Stop();
             var elapsedMs = watch.ElapsedMilliseconds;
             Utility.WriteStatus(GlobalVariable.RichText_log, "Time taken: " + elapsedMs + "ms");
 
-            var outStream = new MemoryStream();
-            image.SaveAsBmp(outStream);
+
 
             button_Generate.Invoke(new Action(() =>
             {
-                pictureBox1.Image = new System.Drawing.Bitmap(outStream);
+                if (image != null)
+                {
+                    var imageName = String.Format("{0}_Steps{1}_Scale{2}_W{3}_H{4}.png", DateTime.Now.ToString("yyyyMMddHHmm"), config.NumInferenceSteps, config.GuidanceScale * 10, config.Width, config.Height);
+                    image.Save(imageName);
+                    var outStream = new MemoryStream();
+                    image.SaveAsBmp(outStream);
+                    pictureBox1.Image = new System.Drawing.Bitmap(outStream);
+                }
+
                 button_Generate.Enabled = true;
             }));
             System.GC.Collect();

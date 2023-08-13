@@ -48,7 +48,7 @@ namespace StableDiffusion.ML.OnnxRuntime
             return AddTensors(sample.ToArray(), sumTensor.ToArray(), sample.Dimensions.ToArray());
         }
 
-        public static Tuple<Tensor<float>, Tensor<float>> SplitTensor(Tensor<float> tensorToSplit, int[] dimensions)
+        public static Tuple<Tensor<float>, Tensor<float>> SplitTensor(Tensor<float> tensorToSplit, int[] dimensions, StableDiffusionConfig config)
         {
             var tensor1 = new DenseTensor<float>(dimensions);
             var tensor2 = new DenseTensor<float>(dimensions);
@@ -57,9 +57,9 @@ namespace StableDiffusion.ML.OnnxRuntime
             {
                 for (int j = 0; j < 4; j++)
                 {
-                    for (int k = 0; k < 512 / 8; k++)
+                    for (int k = 0; k < config.Height / 8; k++)
                     {
-                        for (int l = 0; l < 512 / 8; l++)
+                        for (int l = 0; l < config.Width / 8; l++)
                         {
                             tensor1[i, j, k, l] = tensorToSplit[i, j, k, l];
                             tensor2[i, j, k, l] = tensorToSplit[i, j + 4, k, l];

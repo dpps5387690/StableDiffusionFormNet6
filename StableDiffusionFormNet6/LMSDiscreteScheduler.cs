@@ -106,6 +106,7 @@ namespace StableDiffusion.ML.OnnxRuntime
                Tensor<float> modelOutput,
                int timestep,
                Tensor<float> sample,
+               StableDiffusionConfig config,
                int order = 4)
         {
             int stepIndex = this.Timesteps.IndexOf(timestep);
@@ -180,8 +181,8 @@ namespace StableDiffusion.ML.OnnxRuntime
                 lmsDerProduct[m] = TensorHelper.MultipleTensorByFloat(item.derivative.ToArray(), (float)item.lmsCoeff, item.derivative.Dimensions.ToArray());
             }
             // Sum the tensors
-            var sumTensor = TensorHelper.SumTensors(lmsDerProduct, new[] { 1, 4, 64, 64 });
-
+            //var sumTensor = TensorHelper.SumTensors(lmsDerProduct, new[] { 1, 4, 64, 64 });
+            var sumTensor = TensorHelper.SumTensors(lmsDerProduct, new[] { 1, 4, config.Height / 8, config.Width / 8 });
             // Add the sumed tensor to the sample
             var prevSample = TensorHelper.AddTensors(sample.ToArray(), sumTensor.ToArray(), sample.Dimensions.ToArray());
 

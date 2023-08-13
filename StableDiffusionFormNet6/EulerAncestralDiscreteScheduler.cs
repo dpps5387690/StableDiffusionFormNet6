@@ -80,6 +80,7 @@ namespace StableDiffusion.ML.OnnxRuntime
         public override DenseTensor<float> Step(Tensor<float> modelOutput,
                int timestep,
                Tensor<float> sample,
+               StableDiffusionConfig config,
                int order = 4)
         {
 

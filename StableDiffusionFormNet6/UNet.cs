@@ -107,7 +107,7 @@ namespace StableDiffusion.ML.OnnxRuntime
                 var outputTensor = (output.ToList().First().Value as DenseTensor<float>);
 
                 // Split tensors from 2,4,64,64 to 1,4,64,64
-                var splitTensors = TensorHelper.SplitTensor(outputTensor, new[] { 1, 4, config.Height / 8, config.Width / 8 });
+                var splitTensors = TensorHelper.SplitTensor(outputTensor, new[] { 1, 4, config.Height / 8, config.Width / 8 }, config);
                 var noisePred = splitTensors.Item1;
                 var noisePredText = splitTensors.Item2;
 
@@ -115,7 +115,7 @@ namespace StableDiffusion.ML.OnnxRuntime
                 noisePred = performGuidance(noisePred, noisePredText, config.GuidanceScale);
 
                 // LMS Scheduler Step
-                latents = scheduler.Step(noisePred, timesteps[t], latents);
+                latents = scheduler.Step(noisePred, timesteps[t], latents, config);
                 Utility.WriteStatus(GlobalVariable.RichText_log, $"latents result after step {t} min {latents.Min()} max {latents.Max()}");
 
             }
@@ -134,7 +134,7 @@ namespace StableDiffusion.ML.OnnxRuntime
                 return null;
 
             }
-            var image = VaeDecoder.ConvertToImage(imageResultTensor, config);
+            var image = VaeDecoder.ConvertToImage(imageResultTensor, config, config.Width, config.Height);
             return image;
 
         }
