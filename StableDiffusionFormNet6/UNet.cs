@@ -7,17 +7,24 @@ namespace StableDiffusion.ML.OnnxRuntime
 {
     public class UNet
     {
-        public static List<NamedOnnxValue> CreateUnetModelInput(Tensor<float> encoderHiddenStates, Tensor<float> sample, long timeStep)
+        public static List<NamedOnnxValue> CreateUnetModelInput(Tensor<float> encoderHiddenStates, Tensor<float> sample, long timeStep, bool IsFloat)
         {
-
-            var input = new List<NamedOnnxValue> {
-                NamedOnnxValue.CreateFromTensor("encoder_hidden_states", encoderHiddenStates),
-                NamedOnnxValue.CreateFromTensor("sample", sample),
-                NamedOnnxValue.CreateFromTensor("timestep", new DenseTensor<long>(new long[] { timeStep }, new int[] { 1 }))
-            };
-
-            return input;
-
+            if (IsFloat)
+            {
+                return new List<NamedOnnxValue> {
+                    NamedOnnxValue.CreateFromTensor("encoder_hidden_states", encoderHiddenStates),
+                    NamedOnnxValue.CreateFromTensor("sample", sample),
+                    NamedOnnxValue.CreateFromTensor("timestep", new DenseTensor<float>(new float[] { timeStep }, new int[] { 1 }))
+                };
+            }
+            else
+            {
+                return new List<NamedOnnxValue> {
+                    NamedOnnxValue.CreateFromTensor("encoder_hidden_states", encoderHiddenStates),
+                    NamedOnnxValue.CreateFromTensor("sample", sample),
+                    NamedOnnxValue.CreateFromTensor("timestep", new DenseTensor<long>(new long[] { timeStep }, new int[] { 1 }))
+                };
+            }
         }
 
         public static Tensor<float> GenerateLatentSample(StableDiffusionConfig config, int seed, float initNoiseSigma)
@@ -72,6 +79,12 @@ namespace StableDiffusion.ML.OnnxRuntime
 
         public static SixLabors.ImageSharp.Image Inference(String prompt, StableDiffusionConfig config)
         {
+            var sessionOptions = config.GetSessionOptionsForEp();
+            // Create Inference Session
+            var unetSession = new InferenceSession(config.UnetOnnxPath, sessionOptions);
+
+            config.CrossAttentionDimension = unetSession.InputMetadata["encoder_hidden_states"].Dimensions[2];
+            bool IsFloat = unetSession.InputMetadata["timestep"].ElementDataType == TensorElementType.Float;
             // Preprocess text
             var textEmbeddings = TextProcessing.PreprocessText(prompt, config);
 
@@ -86,10 +99,6 @@ namespace StableDiffusion.ML.OnnxRuntime
 
             var latents = GenerateLatentSample(config, seed, scheduler.InitNoiseSigma);
 
-            var sessionOptions = config.GetSessionOptionsForEp();
-            // Create Inference Session
-            var unetSession = new InferenceSession(config.UnetOnnxPath, sessionOptions);
-
             var input = new List<NamedOnnxValue>();
             for (int t = 0; t < timesteps.Length; t++)
             {
@@ -100,7 +109,7 @@ namespace StableDiffusion.ML.OnnxRuntime
                 latentModelInput = scheduler.ScaleInput(latentModelInput, timesteps[t]);
 
                 Utility.WriteStatus(GlobalVariable.RichText_log, $"scaled model input {latentModelInput[0]} at step {t}. Max {latentModelInput.Max()} Min{latentModelInput.Min()}");
-                input = CreateUnetModelInput(textEmbeddings, latentModelInput, timesteps[t]);
+                input = CreateUnetModelInput(textEmbeddings, latentModelInput, timesteps[t], IsFloat);
 
                 // Run Inference
                 var output = unetSession.Run(input);

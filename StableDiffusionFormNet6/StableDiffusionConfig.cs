@@ -24,6 +24,7 @@ namespace StableDiffusion.ML.OnnxRuntime
         public string UnetOnnxPath = "";
         public string VaeDecoderOnnxPath = "";
         public string SafetyModelPath = "";
+        public int CrossAttentionDimension = 1024;//SD1.5 = 768 SD2.0 = 1024
 
         // default directory for images
         public string ImageOutputPath = "";

@@ -18,12 +18,12 @@ namespace StableDiffusion.ML.OnnxRuntime
             var uncondEmbedding = TextEncoder(uncondInputTokens, config).ToArray();
 
             // Concant textEmeddings and uncondEmbedding
-            DenseTensor<float> textEmbeddings = new DenseTensor<float>(new[] { 2, 77, 768 });
+            DenseTensor<float> textEmbeddings = new DenseTensor<float>(new[] { 2, 77, config.CrossAttentionDimension });
 
             for (var i = 0; i < textPromptEmbeddings.Length; i++)
             {
-                textEmbeddings[0, i / 768, i % 768] = uncondEmbedding[i];
-                textEmbeddings[1, i / 768, i % 768] = textPromptEmbeddings[i];
+                textEmbeddings[0, i / config.CrossAttentionDimension, i % config.CrossAttentionDimension] = uncondEmbedding[i];
+                textEmbeddings[1, i / config.CrossAttentionDimension, i % config.CrossAttentionDimension] = textPromptEmbeddings[i];
             }
             return textEmbeddings;
         }
@@ -87,7 +87,7 @@ namespace StableDiffusion.ML.OnnxRuntime
             var encoded = encodeSession.Run(input);
 
             var lastHiddenState = (encoded.ToList().First().Value as IEnumerable<float>).ToArray();
-            var lastHiddenStateTensor = TensorHelper.CreateTensor(lastHiddenState.ToArray(), new[] { 1, 77, 768 });
+            var lastHiddenStateTensor = TensorHelper.CreateTensor(lastHiddenState.ToArray(), new[] { 1, 77, config.CrossAttentionDimension });
 
             return lastHiddenStateTensor;
 

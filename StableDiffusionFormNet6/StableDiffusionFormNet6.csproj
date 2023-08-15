@@ -11,10 +11,10 @@
 
   <ItemGroup>
     <PackageReference Include="MathNet.Numerics" Version="5.0.0" />
-    <PackageReference Include="Microsoft.ML" Version="2.0.1" />
+    <PackageReference Include="Microsoft.ML" Version="3.0.0-preview.23266.6" />
     <PackageReference Include="Microsoft.ML.OnnxRuntime.Extensions" Version="0.8.1-alpha" />
-    <PackageReference Include="Microsoft.ML.OnnxRuntime.Gpu" Version="1.15.0" />
-    <PackageReference Include="Microsoft.ML.OnnxRuntime.Managed" Version="1.15.0" />
+    <PackageReference Include="Microsoft.ML.OnnxRuntime.Gpu" Version="1.15.1" />
+    <PackageReference Include="Microsoft.ML.OnnxRuntime.Managed" Version="1.15.1" />
     <PackageReference Include="NumSharp" Version="0.30.0" />
     <PackageReference Include="SixLabors.ImageSharp" Version="1.0.3" />
   </ItemGroup>
