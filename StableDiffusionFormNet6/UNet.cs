@@ -7,8 +7,11 @@ namespace StableDiffusion.ML.OnnxRuntime
 {
     public class UNet
     {
-        public static List<NamedOnnxValue> CreateUnetModelInput(Tensor<float> encoderHiddenStates, Tensor<float> sample, long timeStep, bool IsFloat)
+        public static List<NamedOnnxValue> CreateUnetModelInput(Tensor<float> encoderHiddenStates, Tensor<float> sample, long timeStep, DenseTensor<float> textembedsTensor, bool IsFloat)
         {
+            DenseTensor<float> text_embeds = new DenseTensor<float>(new[] { 1, 1280 });
+            DenseTensor<float> time_ids = new DenseTensor<float>(new[] { 1, 6 });
+
             if (IsFloat)
             {
                 return new List<NamedOnnxValue> {
@@ -22,7 +25,9 @@ namespace StableDiffusion.ML.OnnxRuntime
                 return new List<NamedOnnxValue> {
                     NamedOnnxValue.CreateFromTensor("encoder_hidden_states", encoderHiddenStates),
                     NamedOnnxValue.CreateFromTensor("sample", sample),
-                    NamedOnnxValue.CreateFromTensor("timestep", new DenseTensor<long>(new long[] { timeStep }, new int[] { 1 }))
+                    NamedOnnxValue.CreateFromTensor("timestep", new DenseTensor<long>(new long[] { timeStep }, new int[] { 1 })),
+                    NamedOnnxValue.CreateFromTensor("text_embeds", textembedsTensor),
+                    NamedOnnxValue.CreateFromTensor("time_ids", time_ids)
                 };
             }
         }
@@ -86,7 +91,8 @@ namespace StableDiffusion.ML.OnnxRuntime
             config.CrossAttentionDimension = unetSession.InputMetadata["encoder_hidden_states"].Dimensions[2];
             bool IsFloat = unetSession.InputMetadata["timestep"].ElementDataType == TensorElementType.Float;
             // Preprocess text
-            var textEmbeddings = TextProcessing.PreprocessText(prompt, config);
+            DenseTensor<float> textembedsTensor;
+            var textEmbeddings = TextProcessing.PreprocessText(prompt, config, out textembedsTensor);
 
             var scheduler = new LMSDiscreteScheduler();
             //var scheduler = new EulerAncestralDiscreteScheduler();
@@ -96,35 +102,35 @@ namespace StableDiffusion.ML.OnnxRuntime
             //var seed = 329922609;
             Utility.WriteStatus(GlobalVariable.RichText_log, $"Seed generated: {seed}");
             // create latent tensor
-
+            
             var latents = GenerateLatentSample(config, seed, scheduler.InitNoiseSigma);
 
             var input = new List<NamedOnnxValue>();
             for (int t = 0; t < timesteps.Length; t++)
             {
                 // torch.cat([latents] * 2)
-                var latentModelInput = TensorHelper.Duplicate(latents.ToArray(), new[] { 2, 4, config.Height / 8, config.Width / 8 });
+                var latentModelInput = TensorHelper.Duplicate(latents.ToArray(), new[] { 1, 4, config.Height / 8, config.Width / 8 });
 
                 // latent_model_input = scheduler.scale_model_input(latent_model_input, timestep = t)
                 latentModelInput = scheduler.ScaleInput(latentModelInput, timesteps[t]);
 
                 Utility.WriteStatus(GlobalVariable.RichText_log, $"scaled model input {latentModelInput[0]} at step {t}. Max {latentModelInput.Max()} Min{latentModelInput.Min()}");
-                input = CreateUnetModelInput(textEmbeddings, latentModelInput, timesteps[t], IsFloat);
+                input = CreateUnetModelInput(textEmbeddings, latentModelInput, timesteps[t], textembedsTensor, IsFloat);
 
                 // Run Inference
                 var output = unetSession.Run(input);
                 var outputTensor = (output.ToList().First().Value as DenseTensor<float>);
 
                 // Split tensors from 2,4,64,64 to 1,4,64,64
-                var splitTensors = TensorHelper.SplitTensor(outputTensor, new[] { 1, 4, config.Height / 8, config.Width / 8 }, config);
-                var noisePred = splitTensors.Item1;
-                var noisePredText = splitTensors.Item2;
+                //var splitTensors = TensorHelper.SplitTensor(outputTensor, new[] { 1, 4, config.Height / 8, config.Width / 8 }, config);
+                //var noisePred = splitTensors.Item1;
+                //var noisePredText = splitTensors.Item2;
 
-                // Perform guidance
-                noisePred = performGuidance(noisePred, noisePredText, config.GuidanceScale);
+                //// Perform guidance
+                //noisePred = performGuidance(noisePred, noisePredText, config.GuidanceScale);
 
-                // LMS Scheduler Step
-                latents = scheduler.Step(noisePred, timesteps[t], latents, config);
+                //// LMS Scheduler Step
+                //latents = scheduler.Step(noisePred, timesteps[t], latents, config);
                 Utility.WriteStatus(GlobalVariable.RichText_log, $"latents result after step {t} min {latents.Min()} max {latents.Max()}");
 
             }

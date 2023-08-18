@@ -21,6 +21,7 @@ namespace StableDiffusion.ML.OnnxRuntime
 
         public string TokenizerOnnxPath = "cliptokenizer.onnx";
         public string TextEncoderOnnxPath = "";
+        public string TextEncoderOnnxPath2 = "";
         public string UnetOnnxPath = "";
         public string VaeDecoderOnnxPath = "";
         public string SafetyModelPath = "";
