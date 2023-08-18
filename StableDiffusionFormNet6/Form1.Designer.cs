@@ -245,7 +245,7 @@
             this.numericUpDownSteps.Anchor = System.Windows.Forms.AnchorStyles.Left;
             this.numericUpDownSteps.Location = new System.Drawing.Point(63, 101);
             this.numericUpDownSteps.Maximum = new decimal(new int[] {
-            20,
+            1000,
             0,
             0,
             0});
